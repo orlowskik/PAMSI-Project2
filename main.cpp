@@ -160,7 +160,7 @@ bool parse(char a[],Film_tab& tab, int n){
 }
 
 
-const int N = 10;  // Ilosc wczytywanych filmow
+const int N = 100000;  // Ilosc wczytywanych filmow
 Film_tab pom(N);   // Tablica pomocniczna uzuwana przy sortowaniu przez scalanie
 
 
@@ -180,83 +180,138 @@ void merge(Film_tab& base,int begin, int mid, int end){
     i = begin; j = mid+1;   // ustawienie wartosci do przeszukiwania tablicy
 
     for(int k = begin; k <= end; k++){  // Przechodzi cala podana tablice
-        if(i <= mid){
-            if(j <= end){
-                base[k] = (pom[j] < pom[i]) ? pom[j++] : pom[i++];  
+        if(i <= mid){                   // Jezeli istnieja wpisy w lewej podtablicy 
+            if(j <= end){               // Jezeli istnieja wpisy w prawej podtablicy
+                base[k] = (pom[j] < pom[i]) ? pom[j++] : pom[i++];  // Przepisywanie kolejnych liczb z lewej i prawej podtablicy 
             }
             else{
-                base[k] = pom[i++];
+                base[k] = pom[i++];         // Jezeli prawa pusta przepisz lewa
             }
         }
         else{
-            base[k] = pom[j++];
+            base[k] = pom[j++];         // Jezeli lewa pusta przepisz prawa
         }
     }
 }
 
+
+/*
+    Algorytm sortowania tablicy przez scalenie
+    Parametry:
+    [in] Film_tab& base - referencja do tablicy przeznaczonej do sortowania
+    [in] int begin      - pierwsza komorka tablicy
+    [in] int end        - koniec tablicy
+
+*/
 void merge_sort(Film_tab& base, int begin, int end){
     int mid;
 
-    if(end <= begin) return;
-    mid = (begin+end)/2;
-    merge_sort(base,begin,mid);
-    merge_sort(base,mid+1,end);
-    merge(base,begin,mid,end);
+    if(end <= begin) return;    // jednoelementowa tablica jest posortowana
+    mid = (begin+end)/2;        // okreslenie srodka tablicy
+    merge_sort(base,begin,mid); // Rekurencyjny podzial na dwie tablice (z lewej strony)
+    merge_sort(base,mid+1,end); // Rekurencyjny podzial na dwie tablice (z prawej strony)
+    merge(base,begin,mid,end);  // Wykorzystanie funkcji scalajacej
 }
 
 
+
+
+/*
+    Algorytm sortowania szybkiego tablicy 
+    Parametry:
+    [in] Film_tab& base - referencja do tablicy przeznaczonej do sortowania
+    [in] int left       - pierwsza komorka tablicy
+    [in] int right      - koniec tablicy
+
+*/
 void quick_sort(Film_tab& base,int left, int right){
-    film tmp;
-    if(right <= left) return;
+    film tmp;                   // zmienna tymczasowa potrzebna do zamiany rekordow miejscami
+    if(right <= left) return;   // jednoelementowa tablica jest posortowana
 
     int i = left-1, j = right + 1;
-    int pivot = base[(left+right)/2].grade;
+    int pivot = base[(left+right)/2].grade; // jako pivot wybierany jest srodkowy element
 
     while(1){
 
-        while(pivot > base[++i].grade);
+        while(pivot > base[++i].grade); // pierwszy element wiekszy lub rowny pivotowi od lesej
 
-        while(pivot < base[--j].grade);
+        while(pivot < base[--j].grade); // pierwszy element mniejszy lub rowny od prawej
 
-        if(i <= j){
+        if(i <= j){           // jezeli liczniki sie nie minely zamieniamy rekordy miejscami
             tmp = base[i];
             base[i] = base[j];
             base[j] = tmp;
         }
         else
-            break;
+            break;          // przerywamy petle dopiera po uzyskaniu dwoch tablic (mniejszej i wiekszej od pivota)
     }
 
-    if(j > left)
+    if(j > left)                // wykonujemy operacje na prawej tablicy 
         quick_sort(base, left, j);
-    if(i < right)
+    if(i < right)               // wykonujemy operacje na lewej tablicy
         quick_sort(base,i,right);
 }
 
 
-void shell_sort(Film_tab& base){
-    film tmp;
-    int j;
-    int gap = base.size()/2;
 
-    while(gap >= 1){
-        for(int i = gap; i < base.size(); ++i){
+/*
+    Algorytm sortowania szybkiego tablicy 
+    Parametry:
+    [in] Film_tab& base - referencja do tablicy przeznaczonej do sortowania
+
+*/
+void shell_sort(Film_tab& base){
+    film tmp;       // zmienna tymczasowa potrzebna do zamiany rekordow miejscami 
+    int j;  
+    int gap = base.size()/2;    // wyznaczenie przerwy w sposob oryginalny ( zaproponowany przez Shell'a)
+
+    while(gap >= 1){            // dopoki jest to mozliwe
+        for(int i = gap; i < base.size(); ++i){     
             tmp = base[i];
-            for(j = i; j >= gap && base[j-gap].grade > tmp.grade; j-= gap){
+            for(j = i; j >= gap && base[j-gap].grade > tmp.grade; j-= gap){ //dla kazdego co g-tego elementu przesuwaj go do tylu az powstanie posortowane wyrazenie
                 base[j] = base[j-gap];
             }
             base[j] = tmp;
         }
-        gap /= 2;
+        gap /= 2;       //aktualizacja przerwy
     }
 }
 
 
 
+/*  
+    Funkcja obliczajaca srednia z ocen tablicy
+    Parametry:
+    [in] Film_tab& table - referencja do tablicy z filmami
+    [out] double mean    - srednia z ocen filmow zawartych w tablicy 
+*/
+double mean(Film_tab& table){
+    double mean = 0;
+    for(int i = 0; i < table.size() ; ++i){
+        mean += table[i].grade;
+    }
+
+    return mean / table.size();
+}
+
+/*  
+    Funkcja obliczajaca mediane z ocen tablicy posortowanej
+    Parametry:
+    [in] Film_tab& table - referencja do posortowanej tablicy z filmami
+    [out] double median  - mediana z ocen filmow zawartych w tablicy 
+*/
+double median(Film_tab& table){
+    if(table.size() == 0)   // pusta tablica zwraca 0
+        return 0;
+    if(table.size() % 2 == 0)       // mediana jest srednia wartosci srodkowych
+        return (table[table.size()/2].grade + table[table.size()/2 - 1].grade )/2;
+    else
+        return table[table.size()/2].grade; // mediana jest wartoscia srodkowa
+}
 
 int main(){
     char line[300];
-    std::ifstream file("dane2.csv");
+    std::ifstream file("dane.csv");
     int n = 0;
     Film_tab tmp(N);
 
@@ -268,6 +323,7 @@ int main(){
         };
     }
 
+    
     std::cout << "Przed sortowaniem: \n";
     for(int i=0; i < tmp.size();++i){
         std::cout << i << " Film: " << tmp[i].name << " Ocena: " << tmp[i].grade << std::endl;
@@ -283,6 +339,9 @@ int main(){
         std::cout << i << " Film: " << tmp[i].name << " Ocena: " << tmp[i].grade << std::endl;
     }
 
+    std::cout << "Mediana: " << median(tmp) << std::endl;
+    std::cout << "Srednia: " << mean(tmp) << std::endl;
+    
 
     return 0;
 }
